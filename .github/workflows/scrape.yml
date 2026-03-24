@@ -4,11 +4,11 @@ on:
   # 매일 한국 시간 오전 9시 (UTC 00:00)
   schedule:
     - cron: '0 0 * * *'
-  # 수동 실행도 가능 (GitHub Actions 탭에서 Run workflow 버튼)
+  # 수동 실행 (Actions 탭 → Run workflow)
   workflow_dispatch:
     inputs:
       pages:
-        description: '수집할 페이지 범위 (예: 1-5)'
+        description: '수집할 페이지 범위 (예: 1-5 / all)'
         required: false
         default: '1-3'
       translate:
@@ -25,30 +25,25 @@ jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # JSON 커밋 권한
-      pages: write      # GitHub Pages 배포 권한
+      contents: write
+      pages: write
       id-token: write
 
     steps:
-      # 1. 레포지토리 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # 전체 히스토리 (diff 확인용)
+          fetch-depth: 0
 
-      # 2. Python 환경 설정
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # 3. 의존성 설치
       - name: Install dependencies
-        run: |
-          pip install feedparser requests beautifulsoup4 schedule anthropic
+        run: pip install feedparser requests beautifulsoup4 schedule anthropic
 
-      # 4. 아티클 수집
       - name: 아티클 수집
         run: |
           PAGES="${{ github.event.inputs.pages || '1-3' }}"
@@ -57,100 +52,70 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
 
-      # 5. 한국어 번역 (ANTHROPIC_API_KEY 필요)
+      # secrets는 env로 넘겨서 Python 내부에서 체크 (if 조건문에서 직접 참조 불가)
       - name: 한국어 번역
-        if: ${{ github.event.inputs.translate != 'false' && secrets.ANTHROPIC_API_KEY != '' }}
+        if: ${{ github.event.inputs.translate != 'false' }}
         run: |
-          LIMIT="${{ github.event.inputs.translate_limit || '30' }}"
-          echo "번역 최대: $LIMIT개"
-          python quantocracy_scraper.py --translate --limit "$LIMIT" --krx-only
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY 없음 — 번역 스킵"
+          else
+            LIMIT="${{ github.event.inputs.translate_limit || '30' }}"
+            echo "번역 최대: ${LIMIT}개"
+            python quantocracy_scraper.py --translate --limit "$LIMIT" --krx-only
+          fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
 
-      # 6. KRX 아이디어 생성 (주 1회, 월요일만)
-      - name: KRX 리포트 아이디어 생성
-        if: ${{ github.event_name == 'schedule' && secrets.ANTHROPIC_API_KEY != '' }}
+      - name: KRX 리포트 아이디어 생성 (월요일만)
+        if: github.event_name == 'schedule'
         run: |
-          DAY=$(date +%u)   # 1=월 ~ 7=일
-          if [ "$DAY" = "1" ]; then
-            echo "월요일 — KRX 아이디어 생성"
-            python quantocracy_scraper.py --ideas --days 7
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY 없음 — 아이디어 생성 스킵"
           else
-            echo "월요일 아님 ($DAY) — 스킵"
+            DAY=$(date +%u)
+            if [ "$DAY" = "1" ]; then
+              echo "월요일 — KRX 아이디어 생성"
+              python quantocracy_scraper.py --ideas --days 7
+            else
+              echo "오늘은 월요일 아님 (${DAY}요일) — 스킵"
+            fi
           fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      # 7. JSON 내보내기 (웹 앱용)
-      - name: JSON 내보내기
+      - name: JSON 내보내기 및 docs/ 구성
         run: |
           python quantocracy_scraper.py --export
-          # 웹 앱이 읽을 수 있도록 docs/ 폴더에도 복사 (GitHub Pages용)
           mkdir -p docs
           cp quant_articles.json docs/
-          # krx_ideas.json이 있으면 함께 복사
           [ -f krx_ideas.json ] && cp krx_ideas.json docs/ || true
-          # 웹 앱도 docs/ 로 복사
           cp quant_library.html docs/index.html
 
-      # 8. 통계 로그
-      - name: 수집 통계 출력
+      - name: 수집 통계
         run: python quantocracy_scraper.py --stats
 
-      # 9. 변경사항 커밋
       - name: 변경사항 커밋
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 변경된 파일 확인
           git add quant_articles.json docs/ || true
           [ -f krx_ideas.json ] && git add krx_ideas.json || true
-
-          # 변경사항이 있을 때만 커밋
           if git diff --staged --quiet; then
             echo "변경사항 없음 — 커밋 스킵"
           else
-            ARTICLE_COUNT=$(python -c "
-          import json
-          data = json.load(open('quant_articles.json'))
-          ko = sum(1 for a in data if a.get('translated'))
-          print(f'{len(data)}개 아티클, 번역 {ko}개')
-          " 2>/dev/null || echo "집계 불가")
-            git commit -m "chore: 자동 수집 $(date +'%Y-%m-%d') — $ARTICLE_COUNT"
+            COUNT=$(python -c "
+import json,sys
+try:
+  d=json.load(open('quant_articles.json'))
+  ko=sum(1 for a in d if a.get('translated'))
+  print(f'{len(d)}개 아티클 번역{ko}개')
+except: print('집계불가')
+" 2>/dev/null)
+            git commit -m "chore: 자동 수집 $(date +'%Y-%m-%d') — $COUNT"
             git push
           fi
 
-      # 10. GitHub Pages 배포
       - name: GitHub Pages 배포
         uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages
-        continue-on-error: true   # Pages 미설정 시 오류 무시
-
-  # 전체 아카이브 수집 (별도 job — 수동 실행 시에만)
-  full-archive:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.pages == 'all'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: pip install feedparser requests beautifulsoup4 anthropic
-      - name: 전체 아카이브 수집 (226페이지)
-        run: python quantocracy_scraper.py --full-archive --resume
-        timeout-minutes: 60
-        env:
-          PYTHONUNBUFFERED: "1"
-      - name: 커밋
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          python quantocracy_scraper.py --export
-          mkdir -p docs && cp quant_articles.json docs/
-          git add quant_articles.json docs/
-          git diff --staged --quiet || git commit -m "chore: 전체 아카이브 수집 $(date +'%Y-%m-%d')" && git push
+        continue-on-error: true
