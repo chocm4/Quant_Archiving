@@ -1,23 +1,16 @@
 name: Quantocracy 자동 수집 및 배포
 
 on:
-  # 매일 한국 시간 오전 9시 (UTC 00:00)
   schedule:
     - cron: '0 0 * * *'
-  # 수동 실행 (Actions 탭 → Run workflow)
   workflow_dispatch:
     inputs:
       pages:
-        description: '수집할 페이지 범위 (예: 1-5 / all)'
+        description: '수집 페이지 범위 (예: 1-5, 전체는 1-226)'
         required: false
         default: '1-3'
-      translate:
-        description: '한국어 번역 실행 여부'
-        type: boolean
-        required: false
-        default: true
       translate_limit:
-        description: '번역할 최대 아티클 수'
+        description: '번역 최대 수'
         required: false
         default: '30'
 
@@ -30,92 +23,66 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up Python
+      - name: Python 설정
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install feedparser requests beautifulsoup4 schedule anthropic
+      - name: 패키지 설치
+        run: pip install feedparser requests beautifulsoup4 anthropic
 
       - name: 아티클 수집
-        run: |
-          PAGES="${{ github.event.inputs.pages || '1-3' }}"
-          echo "수집 범위: $PAGES"
-          python quantocracy_scraper.py --pages "$PAGES"
-        env:
-          PYTHONUNBUFFERED: "1"
+        run: python quantocracy_scraper.py --pages "${{ github.event.inputs.pages || '1-3' }}"
 
-      # secrets는 env로 넘겨서 Python 내부에서 체크 (if 조건문에서 직접 참조 불가)
       - name: 한국어 번역
-        if: ${{ github.event.inputs.translate != 'false' }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "ANTHROPIC_API_KEY 없음 — 번역 스킵"
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            python quantocracy_scraper.py --translate --limit "${{ github.event.inputs.translate_limit || '30' }}" --krx-only
           else
-            LIMIT="${{ github.event.inputs.translate_limit || '30' }}"
-            echo "번역 최대: ${LIMIT}개"
-            python quantocracy_scraper.py --translate --limit "$LIMIT" --krx-only
-          fi
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PYTHONUNBUFFERED: "1"
-
-      - name: KRX 리포트 아이디어 생성 (월요일만)
-        if: github.event_name == 'schedule'
-        run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "ANTHROPIC_API_KEY 없음 — 아이디어 생성 스킵"
-          else
-            DAY=$(date +%u)
-            if [ "$DAY" = "1" ]; then
-              echo "월요일 — KRX 아이디어 생성"
-              python quantocracy_scraper.py --ideas --days 7
-            else
-              echo "오늘은 월요일 아님 (${DAY}요일) — 스킵"
-            fi
+            echo "API 키 없음 - 번역 스킵"
           fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: JSON 내보내기 및 docs/ 구성
+      - name: KRX 아이디어 생성 (월요일만)
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ "$(date +%u)" = "1" ]; then
+            python quantocracy_scraper.py --ideas --days 7
+          fi
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: JSON 내보내기
         run: |
           python quantocracy_scraper.py --export
           mkdir -p docs
           cp quant_articles.json docs/
-          [ -f krx_ideas.json ] && cp krx_ideas.json docs/ || true
           cp quant_library.html docs/index.html
+          if [ -f krx_ideas.json ]; then cp krx_ideas.json docs/; fi
 
-      - name: 수집 통계
+      - name: 통계 출력
         run: python quantocracy_scraper.py --stats
 
-      - name: 변경사항 커밋
+      - name: Git 커밋
         run: |
-          git config user.name  "github-actions[bot]"
+          git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add quant_articles.json docs/ || true
-          [ -f krx_ideas.json ] && git add krx_ideas.json || true
+          git add docs/ quant_articles.json
+          if [ -f krx_ideas.json ]; then git add krx_ideas.json; fi
           if git diff --staged --quiet; then
-            echo "변경사항 없음 — 커밋 스킵"
+            echo "변경 없음"
           else
-            COUNT=$(python -c "
-import json,sys
-try:
-  d=json.load(open('quant_articles.json'))
-  ko=sum(1 for a in d if a.get('translated'))
-  print(f'{len(d)}개 아티클 번역{ko}개')
-except: print('집계불가')
-" 2>/dev/null)
-            git commit -m "chore: 자동 수집 $(date +'%Y-%m-%d') — $COUNT"
+            git commit -m "chore: 자동 수집 $(date +'%Y-%m-%d')"
             git push
           fi
 
-      - name: GitHub Pages 배포
+      - name: Pages 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      - name: Pages 배포
         uses: actions/deploy-pages@v4
-        continue-on-error: true
