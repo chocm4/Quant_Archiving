@@ -32,7 +32,7 @@ jobs:
           python-version: '3.11'
 
       - name: 패키지 설치
-        run: pip install feedparser requests beautifulsoup4 anthropic
+        run: pip install feedparser requests beautifulsoup4 schedule anthropic
 
       - name: 아티클 수집
         run: python quantocracy_scraper.py --pages "${{ github.event.inputs.pages || '1-3' }}"
