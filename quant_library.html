@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Quant Library v3</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --bg2:#141720; --bg3:#1c2030; --bg4:#222840;
+  --b1:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13); --b3:rgba(255,255,255,.2);
+  --t1:#e8eaf0; --t2:#8b90a0; --t3:#555a6a;
+  --acc:#4f8ef7; --acc2:#7c5ef4;
+  --gold:#e8b84b; --green:#3dd68c; --red:#f26b6b; --teal:#38c9c9; --coral:#f07a5a;
+  --r:10px; --r2:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--t1);font-size:14px;line-height:1.6;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sb{width:248px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow:hidden}
+.logo{padding:18px 18px 14px;border-bottom:1px solid var(--b1)}
+.logo-t{font-family:'DM Serif Display',serif;font-size:17px;letter-spacing:-.3px}
+.logo-s{font-size:10px;color:var(--t3);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.logo-v{font-size:10px;color:var(--acc);font-family:'IBM Plex Mono',monospace}
+
+.nav-section{padding:10px 10px 0}
+.nav-lbl{font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;padding:0 8px;margin-bottom:3px}
+.ni{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--t2);transition:all .15s;user-select:none}
+.ni:hover{background:var(--bg3);color:var(--t1)}
+.ni.active{background:rgba(79,142,247,.12);color:var(--acc)}
+.ni .ic{font-size:13px;width:18px;text-align:center}
+.ni .ct{margin-left:auto;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--t3)}
+.ni.active .ct{color:var(--acc);opacity:.7}
+
+.rss-bar{display:flex;align-items:center;gap:6px;padding:5px 18px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);margin-top:3px}
+.rss-dot{width:6px;height:6px;border-radius:50%;background:var(--t3)}
+.rss-dot.live{background:var(--green);box-shadow:0 0 5px rgba(61,214,140,.5)}
+
+.tag-wrap{padding:5px 10px}
+.tc{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;margin:2px;cursor:pointer;border:1px solid transparent;transition:all .15s;user-select:none}
+.tc:hover{opacity:.85}
+.tc.on{border-color:currentColor!important}
+.t-momentum{background:rgba(79,142,247,.12);color:#7fb3ff}
+.t-ml{background:rgba(124,94,244,.12);color:#a088ff}
+.t-factor{background:rgba(61,214,140,.12);color:#5fdb9e}
+.t-macro{background:rgba(232,184,75,.12);color:#e8b84b}
+.t-portfolio{background:rgba(56,201,201,.12);color:#55d6d6}
+.t-options{background:rgba(180,130,255,.12);color:#c8a0ff}
+.t-pairs{background:rgba(255,180,80,.12);color:#ffb850}
+.t-backtest{background:rgba(136,135,128,.12);color:#aaa}
+.t-research{background:rgba(100,160,255,.12);color:#80b0ff}
+.t-krx{background:rgba(242,107,107,.12);color:#f48888}
+.t-crypto{background:rgba(240,122,90,.12);color:#f09070}
+
+.sb-stats{margin-top:auto;padding:12px 18px;border-top:1px solid var(--b1)}
+.sr{display:flex;justify-content:space-between;margin-bottom:4px}
+.sl{font-size:11px;color:var(--t3)}
+.sv{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--t2)}
+
+/* TOPBAR */
+.topbar{padding:12px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sw{flex:1;position:relative}
+.sw input{width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:7px 12px 7px 34px;color:var(--t1);font-size:13px;outline:none;transition:border .15s}
+.sw input:focus{border-color:var(--b2)}
+.sw input::placeholder{color:var(--t3)}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none}
+.tbtn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--r);border:1px solid var(--b1);background:transparent;color:var(--t2);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tbtn:hover{background:var(--bg3);color:var(--t1)}
+.tbtn.green{border-color:rgba(61,214,140,.3);color:var(--green)}
+.tbtn.green:hover{background:rgba(61,214,140,.08)}
+.tbtn.loading{color:var(--acc)}
+.vt{display:flex;gap:3px}
+.vb{width:30px;height:30px;border-radius:6px;border:1px solid var(--b1);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--t3);transition:all .15s}
+.vb:hover{background:var(--bg3);color:var(--t2)}
+.vb.active{background:var(--bg3);color:var(--acc);border-color:rgba(79,142,247,.3)}
+.ss{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:6px 9px;color:var(--t2);font-size:12px;cursor:pointer;outline:none}
+
+/* LANG TOGGLE */
+.lang-toggle{display:flex;gap:2px;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;padding:2px}
+.lt{padding:4px 9px;border-radius:5px;font-size:11px;cursor:pointer;color:var(--t3);transition:all .15s;font-family:'IBM Plex Mono',monospace}
+.lt.active{background:var(--acc);color:#fff}
+
+/* CONTENT */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.cnt{flex:1;overflow-y:auto;padding:16px 20px}
+.cnt::-webkit-scrollbar{width:3px}
+.cnt::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.st{font-size:13px;font-weight:500;color:var(--t2);display:flex;align-items:center;gap:8px}
+.rc{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--t3)}
+
+/* PROGRESS BAR */
+.prog-wrap{padding:0 20px 10px;flex-shrink:0}
+.prog-bar{height:2px;background:var(--b1);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:2px;transition:width .3s}
+.prog-label{font-size:10px;color:var(--t3);font-family:'IBM Plex Mono',monospace;margin-top:3px;display:flex;justify-content:space-between}
+
+/* CARDS */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.grid.lv{grid-template-columns:1fr;gap:6px}
+
+.card{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ca,transparent);border-radius:2px 2px 0 0}
+.card:hover{border-color:var(--b2);background:var(--bg3);transform:translateY(-1px)}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.card-src{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--t3);letter-spacing:.5px;text-transform:uppercase}
+.card-acts{display:flex;gap:5px}
+.cb{width:24px;height:24px;border:1px solid var(--b1);border-radius:5px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--t3);transition:all .15s}
+.cb:hover{background:var(--bg);color:var(--t1)}
+.cb.bm{color:var(--gold);border-color:rgba(232,184,75,.3)}
+.card-title{font-size:13px;font-weight:500;color:var(--t1);line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-ko{font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;border-left:2px solid rgba(79,142,247,.3);padding-left:8px}
+.card-exc{font-size:12px;color:var(--t2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
+.card-ft{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cd{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--t3);margin-right:auto}
+.tag{font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500}
+.ks{font-size:10px;padding:1px 6px;border-radius:20px;background:rgba(242,107,107,.1);color:#f48888;border:1px solid rgba(242,107,107,.2);font-family:'IBM Plex Mono',monospace}
+.live-badge{font-size:9px;padding:1px 5px;border-radius:20px;background:rgba(61,214,140,.1);color:#3dd68c;border:1px solid rgba(61,214,140,.2)}
+.ko-badge{font-size:9px;padding:1px 5px;border-radius:20px;background:rgba(79,142,247,.1);color:#7fb3ff;border:1px solid rgba(79,142,247,.2)}
+
+.grid.lv .card{padding:10px 14px}
+.grid.lv .card-title{-webkit-line-clamp:1;margin-bottom:3px}
+.grid.lv .card-ko{-webkit-line-clamp:1;margin-bottom:3px}
+.grid.lv .card-exc{display:none}
+
+/* TIMELINE */
+.tg{margin-bottom:24px}
+.tm{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--t3);letter-spacing:1px;text-transform:uppercase;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--b1)}
+.ti{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--b1);cursor:pointer;transition:all .15s}
+.ti:hover .tit{color:var(--acc)}
+.td{width:32px;flex-shrink:0;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--t3);padding-top:1px}
+.ti-info{flex:1;min-width:0}
+.tit{font-size:13px;color:var(--t1);line-height:1.35;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tit-ko{font-size:12px;color:var(--t2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.ti-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ts{font-size:10px;color:var(--t3);font-family:'IBM Plex Mono',monospace}
+
+/* IDEAS */
+.ideas-wrap{}
+.i-gen-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:var(--r);border:1px solid rgba(79,142,247,.3);background:rgba(79,142,247,.08);color:var(--acc);font-size:13px;cursor:pointer;transition:all .15s;margin-bottom:18px;font-weight:500}
+.i-gen-btn:hover{background:rgba(79,142,247,.15)}
+.i-gen-btn:disabled{opacity:.5;cursor:not-allowed}
+.icard{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:16px;margin-bottom:12px;position:relative}
+.icard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ia,var(--acc));border-radius:2px 2px 0 0}
+.inum{position:absolute;top:14px;right:14px;font-size:26px;font-family:'DM Serif Display',serif;color:var(--b2)}
+.icat{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.ititle{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:10px;line-height:1.4}
+.is{margin-bottom:7px}
+.isl{font-size:10px;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
+.ist{font-size:12px;color:var(--t2);line-height:1.6}
+.ichips{display:flex;gap:5px;flex-wrap:wrap}
+.ich{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--bg3);border:1px solid var(--b1);color:var(--t2)}
+.db{font-size:10px;padding:2px 8px;border-radius:20px;font-family:'IBM Plex Mono',monospace}
+.d상{background:rgba(242,107,107,.1);color:#f48888;border:1px solid rgba(242,107,107,.2)}
+.d중{background:rgba(232,184,75,.1);color:#e8b84b;border:1px solid rgba(232,184,75,.2)}
+.d하{background:rgba(61,214,140,.1);color:#3dd68c;border:1px solid rgba(61,214,140,.2)}
+
+/* DETAIL PANEL */
+.dp{position:fixed;right:0;top:0;bottom:0;width:500px;background:var(--bg2);border-left:1px solid var(--b1);z-index:100;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s ease}
+.dp.open{transform:translateX(0)}
+.dp-top{padding:18px 22px 14px;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
+.dp-close{width:28px;height:28px;border:1px solid var(--b1);border-radius:6px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--t2);transition:all .15s}
+.dp-close:hover{background:var(--bg3);color:var(--t1)}
+.dp-body{flex:1;overflow-y:auto;padding:20px 22px}
+.dp-body::-webkit-scrollbar{width:3px}
+.dp-body::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+.dp-src{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dp-srcbadge{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--acc);letter-spacing:.5px;text-transform:uppercase}
+.dp-date{font-size:11px;color:var(--t3);font-family:'IBM Plex Mono',monospace}
+.dp-title{font-family:'DM Serif Display',serif;font-size:19px;color:var(--t1);line-height:1.35;margin-bottom:8px}
+.dp-title-ko{font-size:14px;color:var(--t2);line-height:1.4;margin-bottom:12px;border-left:2px solid rgba(79,142,247,.4);padding-left:10px;font-style:italic}
+.dp-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px}
+.dp-div{border:none;border-top:1px solid var(--b1);margin:15px 0}
+.dp-sl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:8px;font-family:'IBM Plex Mono',monospace}
+.dp-text{font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:15px}
+.dp-ko-box{background:var(--bg3);border:1px solid rgba(79,142,247,.2);border-radius:var(--r2);padding:14px;margin-bottom:15px}
+.dp-ko-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dp-ko-badge{font-size:10px;font-family:'IBM Plex Mono',monospace;color:#7fb3ff;background:rgba(79,142,247,.1);padding:2px 7px;border-radius:20px;border:1px solid rgba(79,142,247,.2)}
+.dp-ko-text{font-size:12px;color:var(--t2);line-height:1.7}
+.krx-box{background:var(--bg3);border:1px solid rgba(242,107,107,.2);border-radius:var(--r2);padding:14px;margin-bottom:15px}
+.krx-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.krx-badge{font-size:10px;font-family:'IBM Plex Mono',monospace;color:#f48888;background:rgba(242,107,107,.1);padding:2px 7px;border-radius:20px;border:1px solid rgba(242,107,107,.2)}
+.krx-score{font-size:11px;color:var(--t3);font-family:'IBM Plex Mono',monospace}
+.krx-step{display:flex;gap:8px;margin-bottom:8px;font-size:12px}
+.krx-n{width:18px;height:18px;border-radius:50%;background:rgba(242,107,107,.15);color:#f48888;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'IBM Plex Mono',monospace;flex-shrink:0;margin-top:1px}
+.krx-t{color:var(--t2);line-height:1.5}
+.krx-t strong{color:var(--t1);font-weight:500}
+.dp-link{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px;border-radius:var(--r);border:1px solid var(--b2);background:transparent;color:var(--t2);font-size:13px;cursor:pointer;transition:all .15s;text-decoration:none}
+.dp-link:hover{background:var(--bg);color:var(--t1)}
+
+/* TRANSLATE PANEL */
+.tr-panel{background:var(--bg3);border:1px solid rgba(79,142,247,.2);border-radius:var(--r2);padding:14px;margin-bottom:15px}
+.tr-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tr-title{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--acc);letter-spacing:.5px;text-transform:uppercase}
+.tr-btn{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(79,142,247,.3);background:rgba(79,142,247,.08);color:var(--acc);cursor:pointer;transition:all .15s}
+.tr-btn:hover{background:rgba(79,142,247,.15)}
+.tr-btn:disabled{opacity:.5;cursor:not-allowed}
+.tr-loading{font-size:12px;color:var(--t3);padding:8px 0}
+
+/* REPORT MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+.modal-bg.open{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--b2);border-radius:var(--r2);width:620px;max-height:85vh;overflow-y:auto;padding:26px}
+.modal-box::-webkit-scrollbar{width:3px}
+.modal-box::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-title{font-family:'DM Serif Display',serif;font-size:19px}
+.msec{margin-bottom:18px}
+.msec-t{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.mblk{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:12px;margin-bottom:7px}
+.mblk-t{font-size:13px;font-weight:500;color:var(--t1);margin-bottom:5px}
+.mcl{list-style:none}
+.mcl li{font-size:12px;color:var(--t2);padding:3px 0;display:flex;gap:7px;align-items:flex-start}
+.mcl li::before{content:'▸';color:var(--acc);flex-shrink:0;margin-top:1px}
+.mcode{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);background:rgba(61,214,140,.06);border:1px solid rgba(61,214,140,.15);border-radius:6px;padding:9px 11px;margin-top:7px;white-space:pre;overflow-x:auto}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;display:none}
+.overlay.on{display:block}
+.empty{text-align:center;padding:50px 20px}
+.empty-i{font-size:28px;margin-bottom:10px;opacity:.3}
+.empty-t{font-size:13px;color:var(--t3)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r);padding:10px 16px;font-size:13px;color:var(--t1);z-index:300;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.on{opacity:1;transform:translateY(0)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .8s linear infinite}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sb">
+  <div class="logo">
+    <div class="logo-t">Quant Library</div>
+    <div class="logo-s">// Quantocracy Archive</div>
+    <div class="logo-v">v3 · Full Archive + 한국어</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-lbl">뷰</div>
+    <div class="ni active" onclick="setView('all',this)"><span class="ic">◈</span> 전체 아티클<span class="ct" id="c-all">0</span></div>
+    <div class="ni" onclick="setView('bookmarks',this)"><span class="ic">★</span> 즐겨찾기<span class="ct" id="c-bm">0</span></div>
+    <div class="ni" onclick="setView('krx',this)"><span class="ic">🇰🇷</span> KRX 적용 가능<span class="ct" id="c-krx">0</span></div>
+    <div class="ni" onclick="setView('ko',this)"><span class="ic">한</span> 한국어 번역 완료<span class="ct" id="c-ko">0</span></div>
+    <div class="ni" onclick="setView('timeline',this)"><span class="ic">◷</span> 타임라인</div>
+    <div class="ni" onclick="setView('ideas',this)"><span class="ic">💡</span> KRX 리포트 아이디어</div>
+    <div class="ni" onclick="openModal()"><span class="ic">📋</span> 리서치 프레임워크</div>
+  </div>
+
+  <div class="rss-bar"><span class="rss-dot" id="rss-dot"></span><span id="rss-st">로컬 데이터</span></div>
+
+  <div class="nav-section" style="margin-top:6px">
+    <div class="nav-lbl">태그 필터</div>
+    <div class="tag-wrap">
+      <span class="tc t-momentum" onclick="toggleTag('momentum')">모멘텀</span>
+      <span class="tc t-ml" onclick="toggleTag('ml')">ML/AI</span>
+      <span class="tc t-factor" onclick="toggleTag('factor')">팩터</span>
+      <span class="tc t-macro" onclick="toggleTag('macro')">매크로</span>
+      <span class="tc t-portfolio" onclick="toggleTag('portfolio')">포트폴리오</span>
+      <span class="tc t-options" onclick="toggleTag('options')">옵션/파생</span>
+      <span class="tc t-pairs" onclick="toggleTag('pairs')">페어트레이딩</span>
+      <span class="tc t-backtest" onclick="toggleTag('backtest')">백테스트</span>
+      <span class="tc t-research" onclick="toggleTag('research')">리서치</span>
+      <span class="tc t-krx" onclick="toggleTag('krx')">KRX직접</span>
+    </div>
+  </div>
+
+  <div class="sb-stats">
+    <div class="sr"><span class="sl">총 아티클</span><span class="sv" id="s-total">0</span></div>
+    <div class="sr"><span class="sl">KRX 가능</span><span class="sv" id="s-krx">0</span></div>
+    <div class="sr"><span class="sl">한국어 번역</span><span class="sv" id="s-ko">0</span></div>
+    <div class="sr"><span class="sl">출처 수</span><span class="sv" id="s-src">0</span></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="sw"><span class="si">⌕</span><input type="text" id="srch" placeholder="제목, 출처, 태그 검색 (한/영)..." oninput="doSearch(this.value)"></div>
+    <button class="tbtn green" id="btn-rss" onclick="loadFeed()"><span id="rss-ic">↻</span> RSS 수집</button>
+    <div class="lang-toggle">
+      <div class="lt active" onclick="setLang('en',this)" id="lt-en">EN</div>
+      <div class="lt" onclick="setLang('ko',this)" id="lt-ko">한국어</div>
+    </div>
+    <div class="vt">
+      <button class="vb active" id="vb-g" onclick="setGrid('grid')">⊞</button>
+      <button class="vb" id="vb-l" onclick="setGrid('list')">≡</button>
+    </div>
+    <select class="ss" onchange="doSort(this.value)">
+      <option value="date-d">최신순</option>
+      <option value="date-a">오래된순</option>
+      <option value="krx-d">KRX점수순</option>
+      <option value="src">출처순</option>
+    </select>
+  </div>
+
+  <div class="prog-wrap" id="prog-wrap" style="display:none">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-label"><span id="prog-txt">수집 중...</span><span id="prog-pct">0%</span></div>
+  </div>
+
+  <div class="cnt" id="cnt">
+    <div class="sh">
+      <div class="st"><span id="vl">전체 아티클</span><span class="rc" id="rc"></span></div>
+    </div>
+    <div id="mc"></div>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="ov" onclick="closeDetail()"></div>
+
+<!-- DETAIL PANEL -->
+<div class="dp" id="dp">
+  <div class="dp-top">
+    <div style="font-size:11px;color:var(--t3);font-family:'IBM Plex Mono',monospace">ARTICLE DETAIL</div>
+    <button class="dp-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="dp-body" id="dpb"></div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title">KRX 퀀트 리서치 프레임워크</div>
+      <button class="dp-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:18px">Quantocracy 글로벌 아이디어를 한국 주식시장에 적용하기 위한 표준 연구 프레임워크입니다.</div>
+    <div class="msec">
+      <div class="msec-t">1단계 — 아이디어 검증</div>
+      <div class="mblk"><ul class="mcl">
+        <li>전략의 핵심 알파 소스 식별 (모멘텀/밸류/퀄리티/매크로)</li>
+        <li>원 논문의 백테스트 기간, 유니버스, 리밸런싱 주기 확인</li>
+        <li>비용(TC, 슬리피지) 가정 확인 및 KRX 기준 재조정</li>
+        <li>KRX에서 유사 팩터 선행연구 탐색</li>
+      </ul></div>
+    </div>
+    <div class="msec">
+      <div class="msec-t">2단계 — 데이터 소스</div>
+      <div class="mblk"><ul class="mcl">
+        <li>가격/거래량: KRX 정보데이터시스템 (data.krx.co.kr)</li>
+        <li>재무데이터: FnGuide, Quantiwise, TS2000</li>
+        <li>매크로: 한국은행 ECOS API (ecos.bok.or.kr)</li>
+        <li>대안데이터: DART 전자공시 Open API</li>
+      </ul>
+      <div class="mcode">import FinanceDataReader as fdr
+import pykrx.stock as stock
+df  = fdr.DataReader('KS11', '2000-01-01')
+uni = fdr.StockListing('KOSPI')</div></div>
+    </div>
+    <div class="msec">
+      <div class="msec-t">3단계 — KRX 특수 고려사항</div>
+      <div class="mblk"><ul class="mcl">
+        <li>가격제한폭 ±30% — 극단값 처리</li>
+        <li>개인투자자 비중 ~60% → 단기 과반응 경향</li>
+        <li>재벌 구조 — 지주회사 할인 / 그룹사 상관관계</li>
+        <li>공매도 제한 (주기적 금지) → Long-only 기준 병행</li>
+        <li>거래세 0.18~0.35% → 회전율 높은 전략에 큰 영향</li>
+      </ul></div>
+    </div>
+    <div class="msec">
+      <div class="msec-t">4단계 — 백테스트 지표</div>
+      <div class="mblk">
+        <div class="mcode"># 목표 지표
+CAGR > KOSPI TR,  Sharpe > 0.7
+MDD < -25%,       Calmar > 0.5
+# 필수 서브기간
+2008(금융위기), 2020(코로나), 2022(금리급등)</div>
+      </div>
+    </div>
+    <button class="dp-link" onclick="closeModal()">닫기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 시드 데이터 (20개) ──────────────────────────────────────────────────────
+const SEED = [
+  {id:"a001",title:"The Friday Gold Trade: A Conditional Edge",title_ko:"금요일 금 트레이딩: 조건부 엣지",source:"Beyond Passive",date:"2026-03-22",excerpt:"Gold drifts higher on Fridays. The effect is statistically significant and has persisted for decades. The key question: under which market conditions does it hold?",excerpt_ko:"금은 금요일에 상승하는 경향이 있습니다. 이 효과는 통계적으로 유의하며 수십 년간 지속되었습니다. 핵심 질문은 어떤 시장 조건에서 이 효과가 성립하는가입니다.",summary_ko:"금요일 금 상승 효과의 조건부 분석",url:"https://substack.com/home/post/p-191782986",tags:["macro","portfolio"],krx_score:5,translated:1,accent:"#e8b84b",krxNote:"KRX 금 ETF(KODEX Gold Futures) 금요일 패턴 + 외국인 수급 교차 검증. 원자재 시장 흐름과 연동 분석 권장."},
+  {id:"a002",title:"Unlocking Relative Value Across Asset Classes",title_ko:"자산군 간 상대가치 해제 전략",source:"Macrosynergy",date:"2026-03-22",excerpt:"A macro-systematic approach for allocating risk capital across 12 asset classes via leveraged derivatives, equalizing expected volatility.",excerpt_ko:"레버리지 파생상품을 통해 12개 자산군에 위험자본을 배분하는 매크로 시스템 접근법. 예상 변동성을 균등화하는 방식으로 포지션을 구성합니다.",summary_ko:"12개 자산군 매크로 체계적 상대가치 배분",url:"https://macrosynergy.com/research/unlocking-relative-value-across-asset-classes/",tags:["macro","portfolio"],krx_score:7,translated:1,accent:"#4f8ef7",krxNote:"KOSPI/KOSDAQ/KTB/금/원달러 멀티에셋 상대가치. ECOS 매크로 + 외국인 수급 팩터로 롱숏 신호 구성."},
+  {id:"a003",title:"Trend Following Is Back – But Will It Last?",title_ko:"추세추종의 귀환 — 지속될 것인가?",source:"Alpha Architect",date:"2026-03-22",excerpt:"Trend following offered a rare safe haven during the April 2025 tariff shock. But regime detection is critical to capturing this alpha consistently.",excerpt_ko:"2025년 4월 관세 충격 당시 추세추종 전략이 희귀한 안전 피난처 역할을 했습니다. 그러나 이 알파를 일관되게 포착하려면 체제 탐지가 핵심입니다.",summary_ko:"위기 시 추세추종 알파와 체제 탐지",url:"https://alphaarchitect.com/the-return-of-the-king-trend-following-is-back-but-will-it-last/",tags:["momentum","portfolio"],krx_score:8,translated:1,accent:"#3dd68c",krxNote:"KOSPI200 선물 추세추종 + HMM 체제 탐지. 국내 CTA 전략과 성과 비교 백테스트 권장."},
+  {id:"a004",title:"More of the Disease, Faster: LLMs and Trading Edges",title_ko:"더 빠른 병: LLM과 트레이딩 엣지",source:"Robot Wealth",date:"2026-03-19",excerpt:"The 'vibe quant' movement uses LLMs to find and validate strategies. This creates beautiful backtests with no real edge — the fundamental question of 'who pays you' remains unanswered.",excerpt_ko:"'바이브 퀀트' 운동은 LLM을 사용해 전략을 찾고 검증합니다. 이는 실제 엣지 없는 아름다운 백테스트를 만들 뿐 — '누가 당신에게 지불하는가'라는 근본 질문은 해결되지 않습니다.",summary_ko:"LLM 기반 전략 개발의 위험성 경고",url:"https://robotwealth.com/more-of-the-disease-faster-what-happens-when-you-ask-an-llm-to-find-you-an-edge/",tags:["ml","backtest"],krx_score:1,translated:1,accent:"#f07a5a",krxNote:null},
+  {id:"a005",title:"Timing Value vs. Growth: 100 Years of Evidence",title_ko:"가치 vs 성장 타이밍: 100년의 증거",source:"Quantpedia",date:"2026-03-19",excerpt:"100+ years of data examining the small value vs large growth spread and whether it can be used to switch between investment styles systematically.",excerpt_ko:"소형 가치주 대 대형 성장주 스프레드를 100년 이상의 데이터로 분석하고, 투자 스타일 간 전술적 전환에 활용 가능한지 검토합니다.",summary_ko:"소형가치-대형성장 스프레드 타이밍 전략",url:"https://quantpedia.com/timing-value-vs-growth-evidence-from-100-years-of-small-value-large-growth-spread/",tags:["factor","portfolio"],krx_score:9,translated:1,accent:"#7c5ef4",krxNote:"KRX 소형가치(PBR<1, 시총 하위 30%) vs 대형성장 스프레드 분석. Fama-French KRX 버전 구성 후 스위칭 전략 백테스트."},
+  {id:"a006",title:"Diversification Has Been a Drag on TAA for 15+ Years",title_ko:"다각화는 15년간 TAA의 발목을 잡았다",source:"Allocate Smartly",date:"2026-03-17",excerpt:"Diversification has been a 2.1%/year drag on TAA performance vs 60/40, mostly due to US equity dominance. But this won't always be the case.",excerpt_ko:"미국 주식의 지배력으로 인해 다각화는 60/40 대비 TAA 성과에 연간 2.1% 마이너스 요인이 되었습니다. 그러나 이는 영원하지 않을 것입니다.",summary_ko:"미국 주식 지배 시대의 다각화 드래그",url:"https://allocatesmartly.com/diversification-has-been-a-huge-drag-on-taa-performance-for-15-years/",tags:["portfolio","macro"],krx_score:4,translated:1,accent:"#38c9c9",krxNote:null},
+  {id:"a007",title:"Anomaly-Based Strategies in Real Estate Sector",title_ko:"부동산 섹터 이상 현상 기반 전략",source:"Quantpedia",date:"2026-03-16",excerpt:"Anomaly-based trading strategies (momentum, reversal, profitability) applied to REITs using 100 years of monthly data from Fama-French industry portfolios.",excerpt_ko:"파마-프렌치 48개 산업 포트폴리오의 100년 월간 데이터를 이용해 부동산 섹터에 이상 현상 기반 전략(모멘텀, 반전, 수익성)을 적용합니다.",summary_ko:"리츠 유니버스 팩터 아노말리 검증",url:"https://quantpedia.com/anomaly-based-trading-strategies-in-the-real-estate-sector/",tags:["factor","backtest"],krx_score:6,translated:1,accent:"#7c5ef4",krxNote:"KRX 상장 리츠 아노말리 분석. 12M 모멘텀, 단기 반전, 배당수익률 팩터 적용. DART 배당 공시 데이터 활용."},
+  {id:"a008",title:"Transformer Models for Alpha Generation",title_ko:"알파 생성을 위한 트랜스포머 모델",source:"Jonathan Kinlay",date:"2026-03-14",excerpt:"Transformers with attention mechanisms can extract sequential patterns from financial time series — moving beyond LSTMs and GRUs for alpha generation.",excerpt_ko:"어텐션 메커니즘을 갖춘 트랜스포머는 금융 시계열에서 순차적 패턴을 추출할 수 있습니다. LSTM과 GRU를 넘어서는 알파 생성의 다음 단계입니다.",summary_ko:"금융 시계열에서 트랜스포머 기반 알파 추출",url:"https://jonathankinlay.com/2026/03/transformer-models-for-alpha-generation-a-practical-guide/",tags:["ml","factor"],krx_score:7,translated:1,accent:"#7c5ef4",krxNote:"KOSPI200 일봉으로 Transformer 알파 모델 학습. DART 뉴스/공시 NLP 팩터와 결합. 5년 롤링 윈도우 학습 권장."},
+  {id:"a009",title:"A Quant's Guide to Cross-Section Maxxing",title_ko:"크로스섹션 극대화 퀀트 가이드",source:"Quant Galore",date:"2026-03-12",excerpt:"Quantitative trading keeps coming back to one idea: the cross-section. Buy relatively strong, sell relatively weak across a universe of assets — with code.",excerpt_ko:"퀀트 트레이딩은 항상 하나의 아이디어로 귀결됩니다: 크로스섹션. 유니버스 내에서 상대적으로 강한 것을 사고 약한 것을 파는 전략, 코드 포함.",summary_ko:"크로스섹션 팩터 전략의 실전 구현 가이드",url:"https://www.quant-galore.com/p/a-quants-guide-to-cross-section-maxxing",tags:["factor","momentum"],krx_score:9,translated:1,accent:"#3dd68c",krxNote:"KOSPI+KOSDAQ 전 종목 크로스섹션. 유동성 필터(거래대금 상위 50%) + Z-score 합성. 월말 리밸런싱, 거래세 0.23% 차감."},
+  {id:"a010",title:"ML for Derivative Pricing and Crash Prediction",title_ko:"파생상품 가격결정과 시장 충돌 예측 ML",source:"Relative Value Arbitrage",date:"2026-03-12",excerpt:"Machine learning for complex derivative pricing and identifying signals preceding major market downturns — with emphasis on interpretability.",excerpt_ko:"복잡한 파생상품 가격 결정과 주요 시장 하락 선행 신호 식별을 위한 머신러닝. 해석 가능성에 중점을 둡니다.",summary_ko:"파생상품 가격결정 및 충돌 예측 ML 모델",url:"https://blog.harbourfronts.com/2026/03/11/machine-learning-for-derivative-pricing-and-crash-prediction/",tags:["ml","options"],krx_score:6,translated:1,accent:"#c8a0ff",krxNote:"KOSPI200 옵션 ML 충돌 예측. VKOSPI 활용. 내재변동성 표면으로 변동성 차익거래 탐색."},
+  {id:"a011",title:"The Best Defensive Strategies: Two Centuries of Evidence",title_ko:"최고의 방어 전략: 2세기의 증거",source:"Alpha Architect",date:"2026-03-12",excerpt:"200 years of data analyzing defensive overlays — trend, options, alternatives — showing drawdowns matter both behaviorally and mechanically.",excerpt_ko:"200년 데이터로 방어적 오버레이(추세, 옵션, 대안자산)를 분석합니다. 낙폭은 행동적으로도 기계적으로도(변동성 드래그) 중요합니다.",summary_ko:"장기 실증 기반 최적 방어 전략 포트폴리오",url:"https://alphaarchitect.com/defensive-investment-strategies/",tags:["portfolio","macro"],krx_score:6,translated:1,accent:"#38c9c9",krxNote:"KOSPI 60/40 대비 방어 전략. 국채(KTB)+주식+금 3자산 포트폴리오. 2008/2020/2022 위기별 서브기간 분석."},
+  {id:"a012",title:"Reinforcement Learning for Portfolio Optimization",title_ko:"포트폴리오 최적화를 위한 강화학습",source:"Jonathan Kinlay",date:"2026-03-08",excerpt:"RL-based portfolio optimization where an agent learns asset allocation by interacting with simulated markets — beyond Markowitz and Black-Litterman.",excerpt_ko:"에이전트가 시뮬레이션 시장과 상호작용하며 자산 배분을 학습하는 강화학습 기반 포트폴리오 최적화. 마코위츠와 블랙-리터만을 넘어섭니다.",summary_ko:"동적 시장 환경에 적응하는 RL 포트폴리오",url:"https://jonathankinlay.com/2026/03/reinforcement-learning-for-portfolio-optimization-from-theory-to-implementation/",tags:["ml","portfolio"],krx_score:5,translated:1,accent:"#7c5ef4",krxNote:null},
+  {id:"a013",title:"Macro Trading Signals with Regression-Based ML",title_ko:"회귀 기반 ML을 활용한 매크로 트레이딩 신호",source:"Macrosynergy",date:"2026-03-08",excerpt:"Elastic net, random forests, and gradient boosting for macro trading signals — with emphasis on out-of-sample validation and interpretability.",excerpt_ko:"매크로 트레이딩 신호 생성을 위한 탄성망, 랜덤포레스트, 그래디언트 부스팅 적용. 표본 외 검증과 해석 가능성에 중점을 둡니다.",summary_ko:"매크로 패널 데이터 기반 ML 트레이딩 신호",url:"https://macrosynergy.com/research/macro-trading-signals-with-regression-based-machine-learning/",tags:["ml","macro"],krx_score:7,translated:1,accent:"#e8b84b",krxNote:"한국 매크로 패널(GDP, CPI, 기준금리, 환율) ECOS API + XGBoost/Ridge. KOSPI 섹터 로테이션 신호 활용."},
+  {id:"a014",title:"The Calendar Ensemble: Event-Driven Alpha Overlay",title_ko:"캘린더 앙상블: 이벤트 드리븐 알파 오버레이",source:"Beyond Passive",date:"2026-03-15",excerpt:"A calendar-based event alpha overlay built on top of factor strategies. High-Sharpe portfolios can tolerate leverage and compound more efficiently.",excerpt_ko:"팩터 전략 위에 구축된 캘린더 기반 이벤트 알파 오버레이. 고샤프 포트폴리오는 레버리지를 허용하고 더 효율적으로 복리 성장합니다.",summary_ko:"옵션만기/지수편입 이벤트 기반 알파 오버레이",url:"https://beyondpassive.substack.com/p/the-calendar-ensemble-building-an",tags:["momentum","portfolio"],krx_score:7,translated:1,accent:"#3dd68c",krxNote:"KRX 캘린더 알파: 배당락일(12월), 옵션만기일(매월 2주목요일), 지수 편출입 이벤트. 팩터 전략 오버레이."},
+  {id:"a015",title:"Pairs Trading: Problems, Limitations, Frustrations",title_ko:"페어 트레이딩: 문제점, 한계, 실망",source:"Robot Wealth",date:"2026-03-02",excerpt:"Universe selection for pairs trading: finding pairs that diverge and converge in a tradeable way, measuring what you care about directly rather than using cointegration tests.",excerpt_ko:"트레이딩 가능한 방식으로 diverge하고 converge하는 페어 찾기. 불안정한 공적분 검정보다 실제로 중요한 것을 직접 측정하는 방법을 다룹니다.",summary_ko:"실전 페어 트레이딩의 유니버스 선택 방법론",url:"https://robotwealth.com/the-winter-of-our-pairs-trading-discontent-problems-limitations-frustrations/",tags:["pairs","backtest"],krx_score:5,translated:1,accent:"#ffb850",krxNote:"KRX 내 산업군 페어 트레이딩. 동일 산업군 내 상관관계 높은 종목 선별. 재벌 계열사 간 페어 가능성 탐색."},
+  {id:"a016",title:"2-Year Notes Momentum: FOMC Cycle Anomalies",title_ko:"2년 국채 모멘텀: FOMC 사이클 이상 현상",source:"Quantpedia",date:"2026-03-05",excerpt:"The Fed has enormous control over the front end of the yield curve. FOMC cycles create predictable anomalies in short-term rates momentum.",excerpt_ko:"연준은 수익률 곡선 단기 구간에 막대한 통제력을 갖습니다. FOMC 사이클은 단기 금리 모멘텀에 예측 가능한 이상 현상을 만들어냅니다.",summary_ko:"FOMC 사이클 기반 단기채권 모멘텀 이상 현상",url:"https://quantpedia.com/2-year-notes-momentum-extracting-term-structure-anomalies-from-fomc-cycles/",tags:["macro","momentum"],krx_score:5,translated:1,accent:"#e8b84b",krxNote:"KRX 채권 시장: 한국은행 통화정책회의 사이클 기반 KTB 모멘텀 이상 현상 탐색."},
+  {id:"a017",title:"Systematic FX Trading with GDP Nowcasts",title_ko:"GDP 속보치 기반 체계적 외환 트레이딩",source:"Macrosynergy",date:"2026-03-02",excerpt:"Point-in-time GDP nowcasts in global FX forward markets generate material long-term risk-adjusted returns based on a simple economic premise.",excerpt_ko:"실시간 GDP 속보치를 글로벌 외환 선도 시장에 적용하면 단순한 경제적 논리에 기반해 장기적으로 의미 있는 위험 조정 수익을 창출합니다.",summary_ko:"GDP 실시간 추정치 기반 외환 체계적 트레이딩",url:"https://macrosynergy.com/research/systematic-fx-trading-with-point-in-time-gdp-growth-estimates/",tags:["macro"],krx_score:3,translated:1,accent:"#e8b84b",krxNote:null},
+  {id:"a018",title:"State-Space Models for Market Microstructure",title_ko:"시장 미시구조를 위한 상태공간 모델",source:"Jonathan Kinlay",date:"2026-03-02",excerpt:"Mamba (State-Space Models) vs Transformers in high-frequency finance. SSMs offer linear complexity in sequence length, critical for tick-level data.",excerpt_ko:"고빈도 금융에서 맘바(상태공간 모델) vs 트랜스포머. SSM은 틱 데이터에 중요한 시퀀스 길이에 대한 선형 복잡도를 제공합니다.",summary_ko:"고빈도 금융에서 SSM vs 트랜스포머 비교",url:"https://jonathankinlay.com/2026/03/state-space-models-for-market-microstructure-can-mamba-replace-transformers-in-high-frequency-finance/",tags:["ml"],krx_score:4,translated:1,accent:"#7c5ef4",krxNote:null},
+  {id:"a019",title:"More Bets, Better Bets",title_ko:"더 많은 베팅, 더 나은 베팅",source:"Quantitativo",date:"2026-02-26",excerpt:"Ed Thorp's philosophy of money management: position sizing, diversification, and the Kelly criterion applied to systematic trading.",excerpt_ko:"에드 소프의 자금 관리 철학: 켈리 기준을 포함한 포지션 사이징, 다각화, 체계적 트레이딩 적용.",summary_ko:"켈리 기준과 체계적 트레이딩에서의 포지션 사이징",url:"https://www.quantitativo.com/p/more-bets-better-bets",tags:["portfolio","backtest"],krx_score:4,translated:1,accent:"#38c9c9",krxNote:null},
+  {id:"a020",title:"Systematic Allocation in International Equity Regimes",title_ko:"국제 주식 체제에서의 체계적 배분",source:"Quantpedia",date:"2026-02-26",excerpt:"Systematic tactical allocation to EM and EAFE amid macro regime transitions — USD hegemony deterioration, elevated geopolitical risk.",excerpt_ko:"USD 패권 약화, 지정학적 위험 고조 등 매크로 체제 전환 속에서 신흥시장(EM) 및 EAFE에 대한 체계적 전술 배분을 검토합니다.",summary_ko:"매크로 체제 전환 시 신흥시장 전술 배분",url:"https://quantpedia.com/systematic-allocation-in-international-equity-regimes/",tags:["macro","portfolio"],krx_score:5,translated:1,accent:"#4f8ef7",krxNote:"KRX/KOSPI는 신흥시장 대표 지수. USD 약세 체제에서 한국 주식 비중 확대 신호 탐색 가능."}
+];
+
+const SEED_IDEAS = [
+  {title:"KOSPI 소형가치 vs 대형성장 스위칭 전략",hypothesis:"국내 소형가치-대형성장 스프레드가 매크로 사이클에 따라 예측 가능한 패턴을 보인다면, 스프레드 모멘텀으로 스타일 간 전술적 배분을 최적화할 수 있다.",source_articles:["Timing Value vs. Growth: 100 Years of Evidence"],data:["pykrx (시총/PBR)","FnGuide 재무 DB","ECOS (기준금리/GDP)"],method:"FnGuide PBR/PER 수집 → 소형가치(PBR<1, 시총 하위 30%) vs 대형성장 포트폴리오 → 스프레드 12M 모멘텀 스위칭 신호 → 2005-2024 월간 백테스트",expected_edge:"밸류-그로스 사이클 타이밍 알파 (연 2-4% 초과수익 가설)",difficulty:"중",category:"팩터"},
+  {title:"KRX 크로스섹션 모멘텀 + 캘린더 이벤트 복합 전략",hypothesis:"KOSPI+KOSDAQ 크로스섹션 모멘텀에 KRX 캘린더 이벤트(옵션만기, 배당락, 지수편입) 오버레이를 결합하면 샤프비율이 유의미하게 개선된다.",source_articles:["Cross-Section Maxxing","Calendar Ensemble"],data:["pykrx (일봉)","KRX 옵션만기일 캘린더","DART 지수편입 공시"],method:"12M 모멘텀 Z-score 롱숏(유동성 상위 50%) → 이벤트 전후 5거래일 포지션 조정 → 거래세 0.23% + 슬리피지 0.1% 차감",expected_edge:"모멘텀 알파(~3%) + 이벤트 알파(~1%) 분리 검증",difficulty:"중",category:"모멘텀"},
+  {title:"ECOS 매크로 패널 XGBoost 섹터 로테이션",hypothesis:"한국은행 ECOS 매크로 16개 변수 기반 XGBoost 모델이 KOSPI 섹터 수익률을 1개월 선행 예측 가능하다.",source_articles:["Macro Trading Signals with Regression-Based ML"],data:["ECOS API (한국은행)","pykrx KOSPI 섹터","FnGuide 섹터 지수"],method:"ECOS 월간 16변수 → Expanding window 학습(5년 훈련/1개월 예측) → XGBoost/Ridge/Elastic Net 비교 → 상위 2섹터 롱/하위 2섹터 숏",expected_edge:"매크로 체제 변화 선행 탐지 → 섹터 로테이션 알파 (+2-5%)",difficulty:"상",category:"매크로"},
+  {title:"KOSPI200 옵션 내재변동성 ML 충돌 예측",hypothesis:"VKOSPI 및 옵션 스큐의 시계열 패턴이 1개월 이내 KOSPI 급락(-5% 이상)을 예측하는 선행 신호로 활용 가능하다.",source_articles:["ML for Derivative Pricing and Crash Prediction"],data:["KRX 옵션 일별 호가","pykrx VKOSPI"],method:"VKOSPI + 25델타 스큐 + 기간 스프레드 → Logistic Regression + Random Forest 충돌 분류 → 임계값별 헷지 전략 백테스트",expected_edge:"꼬리 위험 헷지 비용 절감 + 방어적 포트폴리오 개선",difficulty:"상",category:"ML"},
+  {title:"KRX 리츠 섹터 팩터 이상 현상 검증",hypothesis:"KRX 상장 리츠 유니버스에서 12M 모멘텀, 단기 반전, 배당수익률 팩터가 미국 REIT 연구와 유사한 초과수익을 제공한다.",source_articles:["Anomaly-Based Strategies in Real Estate Sector"],data:["pykrx (리츠 가격/배당)","DART 배당 공시","FnGuide 임대수익"],method:"KRX 리츠 전 유니버스(2010-2024) → 3개 팩터 Z-score → 동일가중 롱 상위 3 / 숏 하위 3 → IC, ICIR, Fama-MacBeth 검증",expected_edge:"리츠 시장 소형/비효율 프리미엄 + 배당 팩터 알파",difficulty:"하",category:"팩터"}
+];
+
+// ─── 상태 ────────────────────────────────────────────────────────────────────
+let arts     = [...SEED];
+let ideas    = [...SEED_IDEAS];
+let bms      = new Set(JSON.parse(localStorage.getItem('ql_bm3')||'[]'));
+let curView  = 'all';
+let curTags  = new Set();
+let srchQ    = '';
+let sortM    = 'date-d';
+let gridM    = 'grid';
+let lang     = 'en';   // 'en' | 'ko'
+
+const TL = {momentum:'모멘텀',ml:'ML/AI',factor:'팩터',macro:'매크로',portfolio:'포트폴리오',options:'옵션/파생',pairs:'페어트레이딩',backtest:'백테스트',research:'리서치',krx:'KRX직접',crypto:'크립토'};
+const TC = {momentum:'t-momentum',ml:'t-ml',factor:'t-factor',macro:'t-macro',portfolio:'t-portfolio',options:'t-options',pairs:'t-pairs',backtest:'t-backtest',research:'t-research',krx:'t-krx',crypto:'t-crypto'};
+const IA = {팩터:'#3dd68c',모멘텀:'#4f8ef7',ML:'#7c5ef4',매크로:'#e8b84b',포트폴리오:'#38c9c9',이벤트드리븐:'#f07a5a'};
+
+function saveBms(){localStorage.setItem('ql_bm3',JSON.stringify([...bms]))}
+
+// ─── 태그/KRX ────────────────────────────────────────────────────────────────
+function autoTag(t,e){
+  const tx=(t+' '+e).toLowerCase();
+  const rules={momentum:['momentum','trend follow','52-week','moving average','breakout'],ml:['machine learning','deep learning','neural','transformer','llm','gpt','random forest','xgboost','reinforcement learning','lstm','autoencoder'],factor:['factor','value','quality','profitability','anomaly','alpha','fama','french','smart beta','cross-section'],macro:['macro','interest rate','inflation','gdp','central bank','fed ','yield curve','currency','regime','monetary policy'],portfolio:['portfolio','allocation','diversification','risk parity','drawdown','sharpe','rebalancing','tactical','taa'],options:['option','vix','implied vol','delta','gamma','derivatives','futures','skew'],pairs:['pairs trading','cointegration','stat arb','statistical arbitrage','mean reversion'],crypto:['bitcoin','crypto','blockchain','defi','ethereum'],backtest:['backtest','out-of-sample','overfitting','walk-forward','simulation'],research:['paper','research','evidence','academic','study','empirical']};
+  return Object.entries(rules).filter(([,kws])=>kws.some(k=>tx.includes(k))).map(([t])=>t);
+}
+function krxScore(t,e){
+  const tx=(t+' '+e).toLowerCase();
+  const m={factor:3,momentum:3,value:3,'cross-section':3,'mean reversion':3,equity:3,portfolio:2,allocation:2,regime:2,volatility:2,macro:2,earnings:2,anomaly:2,trend:1,'machine learning':1,alpha:1,backtest:1,risk:1,bitcoin:-3,crypto:-3,defi:-3};
+  return Object.entries(m).reduce((s,[k,v])=>tx.includes(k)?s+v:s,0);
+}
+function getAccent(tags){
+  if(tags.includes('ml'))return'#7c5ef4';if(tags.includes('momentum'))return'#3dd68c';
+  if(tags.includes('macro'))return'#e8b84b';if(tags.includes('factor'))return'#7c5ef4';
+  if(tags.includes('portfolio'))return'#38c9c9';if(tags.includes('options'))return'#c8a0ff';
+  return'#4f8ef7';
+}
+
+// ─── RSS 수집 ─────────────────────────────────────────────────────────────────
+async function loadFeed(){
+  const btn=document.getElementById('btn-rss');
+  const ic=document.getElementById('rss-ic');
+  btn.disabled=true;btn.classList.add('loading');
+  ic.innerHTML='<span class="spin">↻</span>';
+  showProg(true,'RSS 수집 중...',0);
+  try{
+    const PROXY='https://api.allorigins.win/get?url=';
+    const RSS=encodeURIComponent('https://feeds.feedburner.com/Quantocracy');
+    const r=await fetch(PROXY+RSS);
+    const d=await r.json();
+    const parser=new DOMParser();
+    const xml=parser.parseFromString(d.contents,'text/xml');
+    const items=xml.querySelectorAll('item');
+    let nc=0,total=items.length;
+    for(let i=0;i<items.length;i++){
+      const item=items[i];
+      showProg(true,'RSS 수집 중...', Math.round((i+1)/total*100));
+      const pubRaw=item.querySelector('pubDate')?.textContent||'';
+      const pub=pubRaw?new Date(pubRaw).toISOString().slice(0,10):'';
+      const enc=item.querySelector('encoded')?.textContent||item.querySelector('description')?.textContent||'';
+      const div=document.createElement('div');div.innerHTML=enc;
+      div.querySelectorAll('.qo-entry').forEach(en=>{
+        const lk=en.querySelector('a.qo-title');
+        const dc=en.querySelector('.qo-description');
+        if(!lk)return;
+        const rt=lk.textContent.trim(),ru=lk.getAttribute('href')||'';
+        const exc=(dc?.textContent||'').trim().slice(0,800);
+        const sm=rt.match(/\[([^\]]+)\]$/);
+        let src,tit;
+        if(sm){src=sm[1].trim();tit=rt.slice(0,rt.lastIndexOf('[')).trim();}
+        else{src=new URL(ru.startsWith('http')?ru:'https://x.com').hostname.replace('www.','').split('.')[0];tit=rt;}
+        const aid=btoa(ru).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+        if(arts.find(a=>a.id===aid||a.title===tit))return;
+        const tags=autoTag(tit,exc);
+        const score=krxScore(tit,exc);
+        arts.unshift({id:aid,title:tit,title_ko:null,url:ru,source:src,date:pub,excerpt:exc,excerpt_ko:null,summary_ko:null,tags,krx_score:score,translated:0,accent:getAccent(tags),krxNote:score>=3?`KRX 적용 가능성 점수: ${score}`:null,_live:true});
+        nc++;
+      });
+    }
+    document.getElementById('rss-dot').classList.add('live');
+    document.getElementById('rss-st').textContent=`Live · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
+    showToast(nc>0?`${nc}개 새 아티클 수집 완료`:'새 아티클 없음 (최신 상태)');
+    updateStats();renderView();
+  }catch(e){showToast('RSS 수집 실패: '+e.message);}
+  finally{btn.disabled=false;btn.classList.remove('loading');ic.innerHTML='↻';showProg(false);}
+}
+
+function showProg(show,txt='',pct=0){
+  const w=document.getElementById('prog-wrap');
+  w.style.display=show?'block':'none';
+  if(show){
+    document.getElementById('prog-fill').style.width=pct+'%';
+    document.getElementById('prog-txt').textContent=txt;
+    document.getElementById('prog-pct').textContent=pct+'%';
+  }
+}
+
+// ─── 필터/정렬 ───────────────────────────────────────────────────────────────
+function getFiltered(){
+  let list=[...arts];
+  if(curView==='bookmarks')list=list.filter(a=>bms.has(a.id));
+  if(curView==='krx')list=list.filter(a=>a.krx_score>=3);
+  if(curView==='ko')list=list.filter(a=>a.translated);
+  if(curTags.size>0)list=list.filter(a=>[...curTags].some(t=>(a.tags||[]).includes(t)));
+  if(srchQ){
+    const q=srchQ.toLowerCase();
+    list=list.filter(a=>
+      a.title.toLowerCase().includes(q)||
+      (a.title_ko||'').toLowerCase().includes(q)||
+      a.source.toLowerCase().includes(q)||
+      (a.excerpt||'').toLowerCase().includes(q)||
+      (a.excerpt_ko||'').toLowerCase().includes(q)||
+      (a.summary_ko||'').toLowerCase().includes(q)||
+      (a.tags||[]).some(t=>t.includes(q))
+    );
+  }
+  list.sort((a,b)=>{
+    if(sortM==='date-d')return(b.date||'').localeCompare(a.date||'');
+    if(sortM==='date-a')return(a.date||'').localeCompare(b.date||'');
+    if(sortM==='krx-d')return(b.krx_score||0)-(a.krx_score||0);
+    if(sortM==='src')return a.source.localeCompare(b.source);
+    return 0;
+  });
+  return list;
+}
+
+// ─── 통계 ────────────────────────────────────────────────────────────────────
+function updateStats(){
+  const tot=arts.length,krx=arts.filter(a=>a.krx_score>=3).length;
+  const ko=arts.filter(a=>a.translated).length,bm=bms.size;
+  const srcs=new Set(arts.map(a=>a.source)).size;
+  document.getElementById('c-all').textContent=tot;
+  document.getElementById('c-bm').textContent=bm;
+  document.getElementById('c-krx').textContent=krx;
+  document.getElementById('c-ko').textContent=ko;
+  document.getElementById('s-total').textContent=tot.toLocaleString();
+  document.getElementById('s-krx').textContent=krx.toLocaleString();
+  document.getElementById('s-ko').textContent=ko.toLocaleString();
+  document.getElementById('s-src').textContent=srcs;
+  const list=getFiltered();
+  document.getElementById('rc').textContent=list.length.toLocaleString()+'개';
+}
+
+// ─── 렌더링 ──────────────────────────────────────────────────────────────────
+function renderView(){
+  updateStats();
+  if(curView==='ideas'){renderIdeas();return;}
+  if(curView==='timeline'){renderTimeline();return;}
+  renderCards();
+}
+
+function renderCards(){
+  const list=getFiltered();
+  const mc=document.getElementById('mc');
+  if(!list.length){mc.innerHTML='<div class="empty"><div class="empty-i">◉</div><div class="empty-t">해당 조건의 아티클이 없습니다</div></div>';return;}
+  const lv=gridM==='list';
+  mc.innerHTML=`<div class="grid${lv?' lv':''}">`+list.map(a=>{
+    const bm=bms.has(a.id);
+    const ts=(a.tags||[]).map(t=>`<span class="tag ${TC[t]||''}">${TL[t]||t}</span>`).join('');
+    const showKo=lang==='ko'&&a.translated;
+    const titleDisp=showKo&&a.title_ko?a.title_ko:a.title;
+    const koLine=showKo&&a.summary_ko?`<div class="card-ko">${a.summary_ko}</div>`:'';
+    const excDisp=showKo&&a.excerpt_ko?a.excerpt_ko:a.excerpt;
+    const liveBadge=a._live?'<span class="live-badge">LIVE</span>':'';
+    const koBadge=a.translated?'<span class="ko-badge">한국어</span>':'';
+    const krxBadge=a.krx_score>=3?`<span class="ks">KRX +${a.krx_score}</span>`:'';
+    return`<div class="card" style="--ca:${a.accent||'#4f8ef7'}" onclick="openDetail('${a.id}')">
+      <div class="card-h">
+        <span class="card-src">${a.source}</span>
+        <div class="card-acts">
+          ${a.krxNote?`<button class="cb" title="KRX 적용" onclick="event.stopPropagation();openDetail('${a.id}')">🇰🇷</button>`:''}
+          <button class="cb${bm?' bm':''}" onclick="event.stopPropagation();toggleBm('${a.id}',this)">★</button>
+        </div>
+      </div>
+      <div class="card-title">${titleDisp}</div>
+      ${koLine}
+      <div class="card-exc">${excDisp}</div>
+      <div class="card-ft">
+        <span class="cd">${a.date}</span>${liveBadge}${koBadge}${ts}${krxBadge}
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function renderTimeline(){
+  const list=getFiltered();
+  const mc=document.getElementById('mc');
+  if(!list.length){mc.innerHTML='<div class="empty"><div class="empty-i">◉</div><div class="empty-t">아티클 없음</div></div>';return;}
+  const groups={};
+  list.forEach(a=>{const ym=(a.date||'').slice(0,7);if(!groups[ym])groups[ym]=[];groups[ym].push(a);});
+  mc.innerHTML=Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).map(([ym,as])=>{
+    const [y,m]=ym.split('-');
+    return`<div class="tg">
+      <div class="tm">${y}년 ${parseInt(m)}월 — ${as.length}개</div>
+      ${as.map(a=>{
+        const tit=lang==='ko'&&a.title_ko?a.title_ko:a.title;
+        const titKo=lang==='ko'&&a.title_ko&&a.title_ko!==a.title?`<div class="tit-ko">${a.summary_ko||''}</div>`:'';
+        const ts=(a.tags||[]).slice(0,2).map(t=>`<span class="tag ${TC[t]||''}" style="font-size:10px;padding:1px 5px">${TL[t]||t}</span>`).join('');
+        const ks=a.krx_score>=3?`<span class="ks" style="font-size:10px">KRX +${a.krx_score}</span>`:'';
+        return`<div class="ti" onclick="openDetail('${a.id}')">
+          <div class="td">${(a.date||'').slice(8)}</div>
+          <div class="ti-info">
+            <div class="tit">${tit}</div>
+            ${titKo}
+            <div class="ti-meta"><span class="ts">${a.source}</span>${ts}${ks}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function renderIdeas(){
+  const mc=document.getElementById('mc');
+  let html=`<div class="ideas-wrap">
+    <button class="i-gen-btn" id="gen-btn" onclick="genIdeas()">💡 Claude AI로 새 아이디어 생성 (현재 수집 아티클 기반)</button>`;
+  ideas.forEach((idea,i)=>{
+    const acc=IA[idea.category]||'#4f8ef7';
+    html+=`<div class="icard" style="--ia:${acc}">
+      <div class="inum">${String(i+1).padStart(2,'0')}</div>
+      <div class="icat"><span>${idea.category}</span><span class="db d${idea.difficulty}">난이도 ${idea.difficulty}</span></div>
+      <div class="ititle">${idea.title}</div>
+      <div class="is"><div class="isl">핵심 가설</div><div class="ist">${idea.hypothesis}</div></div>
+      <div class="is"><div class="isl">방법론</div><div class="ist">${idea.method}</div></div>
+      <div class="is"><div class="isl">데이터</div><div class="ichips">${(idea.data||[]).map(d=>`<span class="ich">${d}</span>`).join('')}</div></div>
+      <div class="is" style="margin-top:8px"><div class="isl">기대 엣지</div><div class="ist">${idea.expected_edge}</div></div>
+    </div>`;
+  });
+  html+='</div>';
+  mc.innerHTML=html;
+}
+
+// ─── Claude API 번역 ──────────────────────────────────────────────────────────
+async function translateArticle(art){
+  if(art.translated)return;
+  const prompt=`퀀트 파이낸스 아티클을 한국어로 번역해주세요.
+
+제목: ${art.title}
+요약: ${art.excerpt.slice(0,400)}
+KRX점수: ${art.krx_score}
+
+다음 JSON으로만 출력 (다른 텍스트 없이):
+{"title_ko":"제목 번역","excerpt_ko":"2-3문장 번역","summary_ko":"30자 이내 핵심 요약","krx_note_ko":${art.krx_score>=3?'"KRX 적용 방법 1-2문장"':'null'}}`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await r.json();
+    let raw=(d.content||[]).find(c=>c.type==='text')?.text||'';
+    raw=raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    const res=JSON.parse(raw);
+    const idx=arts.findIndex(a=>a.id===art.id);
+    if(idx>=0){arts[idx]={...arts[idx],...res,translated:1,krxNote:res.krx_note_ko||arts[idx].krxNote};}
+    return res;
+  }catch(e){console.error('번역 오류:',e);return null;}
+}
+
+// ─── 아이디어 생성 ────────────────────────────────────────────────────────────
+async function genIdeas(){
+  const btn=document.getElementById('gen-btn');
+  if(!btn)return;
+  btn.disabled=true;btn.textContent='⟳ 아이디어 생성 중...';
+  const top=arts.filter(a=>a.krx_score>=3).sort((a,b)=>(b.krx_score||0)-(a.krx_score||0)).slice(0,10);
+  const sum=top.map(a=>`[${a.source}] ${a.title_ko||a.title}\n  ${a.excerpt.slice(0,150)}\n  태그: ${(a.tags||[]).join(',')} | KRX: ${a.krx_score}`).join('\n\n');
+  const prompt=`한국 주식시장 전문 퀀트 리서처로서 아래 연구들 기반 KRX 적용 아이디어 5개를 JSON으로만 출력:
+${sum}
+[{"title":"","hypothesis":"","source_articles":[],"data":[],"method":"","expected_edge":"","difficulty":"상|중|하","category":"팩터|모멘텀|ML|매크로|포트폴리오|이벤트드리븐"}]`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();
+    let raw=(d.content||[]).find(c=>c.type==='text')?.text||'';
+    raw=raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    ideas=JSON.parse(raw);
+    showToast(`${ideas.length}개 새 아이디어 생성 완료!`);
+    renderIdeas();
+  }catch(e){showToast('생성 실패: '+e.message);if(btn){btn.disabled=false;btn.textContent='💡 Claude AI로 새 아이디어 생성';}}
+}
+
+// ─── 디테일 패널 ──────────────────────────────────────────────────────────────
+async function openDetail(id){
+  const a=arts.find(x=>x.id===id);
+  if(!a)return;
+  renderDetailContent(a, false);
+  document.getElementById('dp').classList.add('open');
+  document.getElementById('ov').classList.add('on');
+  // 번역 안된 경우 비동기로 번역 후 업데이트
+  if(!a.translated){
+    const tr=document.getElementById('tr-panel');
+    if(tr)tr.querySelector('.tr-loading').textContent='번역 중...';
+    const res=await translateArticle(a);
+    if(res){
+      updateStats();
+      if(lang==='ko')renderView();
+      renderDetailContent(arts.find(x=>x.id===id)||a, false);
+    }
+  }
+}
+
+function renderDetailContent(a, loading){
+  const bm=bms.has(a.id);
+  const ts=(a.tags||[]).map(t=>`<span class="tag ${TC[t]||''}">${TL[t]||t}</span>`).join('');
+  const koBox=a.translated&&a.excerpt_ko?`
+    <div class="dp-ko-box">
+      <div class="dp-ko-hdr"><span class="dp-ko-badge">한국어 번역</span></div>
+      ${a.summary_ko?`<div class="dp-ko-text" style="font-weight:500;margin-bottom:6px;color:var(--t1)">${a.summary_ko}</div>`:''}
+      <div class="dp-ko-text">${a.excerpt_ko}</div>
+    </div>`:(loading?`<div class="tr-panel"><div class="tr-hdr"><span class="tr-title">한국어 번역</span></div><div class="tr-loading">번역 중...</div></div><div class="tr-panel" id="tr-panel"><div class="tr-loading">Claude API 번역 중...</div></div>`:`<div class="tr-panel" id="tr-panel"><div class="tr-hdr"><span class="tr-title">한국어 번역</span><button class="tr-btn" onclick="translateAndUpdate('${a.id}')">번역 요청</button></div></div>`);
+  const krxBox=a.krxNote?`
+    <div class="krx-box">
+      <div class="krx-hdr"><span class="krx-badge">KRX 적용</span><span class="krx-score">점수 +${a.krx_score}</span></div>
+      <div class="krx-step"><div class="krx-n">1</div><div class="krx-t">${a.translated&&a.krxNote?a.krxNote:a.krxNote}</div></div>
+      <div class="krx-step"><div class="krx-n">2</div><div class="krx-t"><strong>백테스트 기간:</strong> 최소 2010–2024</div></div>
+      <div class="krx-step"><div class="krx-n">3</div><div class="krx-t"><strong>비용:</strong> 거래세 0.23% + 수수료 0.015% + 슬리피지 0.1%</div></div>
+    </div>`:'';
+  document.getElementById('dpb').innerHTML=`
+    <div class="dp-src">
+      <span class="dp-srcbadge">${a.source}</span>
+      <span class="dp-date">${a.date}</span>
+      ${a._live?'<span class="live-badge">LIVE</span>':''}
+      ${a.translated?'<span class="ko-badge">한국어 완료</span>':''}
+    </div>
+    <div class="dp-title">${a.title}</div>
+    ${a.title_ko?`<div class="dp-title-ko">${a.title_ko}</div>`:''}
+    <div class="dp-tags">${ts}</div>
+    <hr class="dp-div">
+    <div class="dp-sl">원문 요약</div>
+    <div class="dp-text">${a.excerpt}</div>
+    ${koBox}
+    ${krxBox}
+    <hr class="dp-div">
+    <div style="display:flex;gap:7px">
+      <button class="cb${bm?' bm':''}" style="width:34px;height:34px;font-size:15px" onclick="toggleBm('${a.id}',this)">★</button>
+      <a href="${a.url}" target="_blank" class="dp-link" style="flex:1">원문 보기 →</a>
+    </div>`;
+}
+
+async function translateAndUpdate(id){
+  const a=arts.find(x=>x.id===id);
+  if(!a)return;
+  const btn=document.querySelector('#tr-panel .tr-btn');
+  if(btn){btn.disabled=true;btn.textContent='번역 중...';}
+  const res=await translateArticle(a);
+  if(res){
+    updateStats();if(lang==='ko')renderView();
+    renderDetailContent(arts.find(x=>x.id===id)||a,false);
+    showToast('번역 완료!');
+  }else{showToast('번역 실패');}
+}
+
+function closeDetail(){
+  document.getElementById('dp').classList.remove('open');
+  document.getElementById('ov').classList.remove('on');
+}
+
+// ─── 인터랙션 ─────────────────────────────────────────────────────────────────
+function toggleBm(id,btn){
+  bms.has(id)?bms.delete(id):bms.add(id);
+  btn?.classList.toggle('bm',bms.has(id));
+  saveBms();updateStats();
+  if(curView==='bookmarks')renderView();
+}
+function setView(v,el){
+  curView=v;
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  el?.classList.add('active');
+  const LBL={all:'전체 아티클',bookmarks:'즐겨찾기',krx:'KRX 적용 가능',ko:'한국어 번역 완료',timeline:'타임라인',ideas:'KRX 리포트 아이디어'};
+  document.getElementById('vl').textContent=LBL[v]||v;
+  renderView();
+}
+function toggleTag(tag){
+  curTags.has(tag)?curTags.delete(tag):curTags.add(tag);
+  document.querySelectorAll('.tc').forEach(el=>{
+    const m=el.getAttribute('onclick').match(/'([^']+)'/);
+    if(m)el.classList.toggle('on',curTags.has(m[1]));
+  });
+  renderView();
+}
+function doSearch(v){srchQ=v;renderView();}
+function doSort(v){sortM=v;renderView();}
+function setGrid(m){
+  gridM=m;
+  document.getElementById('vb-g').classList.toggle('active',m==='grid');
+  document.getElementById('vb-l').classList.toggle('active',m==='list');
+  renderView();
+}
+function setLang(l,el){
+  lang=l;
+  document.querySelectorAll('.lt').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  renderView();
+}
+function openModal(){document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),3000);
+}
+
+// ─── 초기화 ───────────────────────────────────────────────────────────────────
+// GitHub Pages 환경이면 quant_articles.json을 fetch, 아니면 시드 데이터 사용
+async function init(){
+  // 로딩 표시
+  document.getElementById('mc').innerHTML=
+    '<div class="empty"><div class="empty-i" style="animation:spin 1s linear infinite;display:inline-block">↻</div><div class="empty-t" style="margin-top:12px">데이터 로딩 중...</div></div>';
+
+  // 1) JSON 파일 로드 시도 (GitHub Pages / 로컬 서버 환경)
+  const jsonUrl = (() => {
+    // 같은 디렉토리의 quant_articles.json 먼저 시도
+    const base = location.href.replace(/[^/]*$/, '');
+    return base + 'quant_articles.json';
+  })();
+
+  try {
+    const resp = await fetch(jsonUrl, { cache: 'no-cache' });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data) && data.length > 0) {
+        // 필드 정규화 (스크래퍼 출력 형식 맞춤)
+        arts = data.map(a => ({
+          ...a,
+          date:      a.date || a.published || '',
+          tags:      Array.isArray(a.tags) ? a.tags : [],
+          krx_score: a.krx_score || 0,
+          translated:a.translated || 0,
+          accent:    a.accent || getAccent(a.tags || []),
+          krxNote:   a.krx_note_ko || a.krxNote || (a.krx_score >= 3 ? `KRX 적용 점수: +${a.krx_score}` : null),
+        }));
+
+        // 최신 업데이트 시각 표시
+        const newest = [...arts].sort((a,b)=>b.date.localeCompare(a.date))[0];
+        document.getElementById('rss-dot').classList.add('live');
+        document.getElementById('rss-st').textContent =
+          `JSON · ${newest?.date || ''} · ${arts.length.toLocaleString()}개`;
+
+        // KRX 아이디어도 로드 시도
+        try {
+          const ideasBase = jsonUrl.replace('quant_articles.json','krx_ideas.json');
+          const ir = await fetch(ideasBase, { cache: 'no-cache' });
+          if (ir.ok) {
+            const idata = await ir.json();
+            if (Array.isArray(idata) && idata.length > 0) ideas = idata;
+          }
+        } catch {}
+
+        showToast(`✓ ${arts.length.toLocaleString()}개 아티클 로드 완료`);
+        updateStats(); renderView();
+        return;
+      }
+    }
+  } catch (e) {
+    // fetch 실패 = 로컬 파일 시스템 또는 네트워크 없음 → 시드 데이터로 폴백
+  }
+
+  // 2) 폴백: 내장 시드 데이터 사용
+  document.getElementById('rss-st').textContent = '시드 데이터 (JSON 없음)';
+  showToast('quant_articles.json 없음 — 시드 데이터 사용 중');
+  updateStats(); renderView();
+}
+
+init();
+</script>
+</body>
+</html>
